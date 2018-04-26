@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Firmware Update</string>
+    <string name="hint_et_file_path">file path,please select .bin file</string>
+    <string name="select">select</string>
+    <string name="start">start</string>
+    <string name="setting">setting</string>
+    <string name="valid_file">Please select a valid binary file!!!</string>
+    <string name="toast_connect">Please Connect devices…</string>
+    <string name="select_file_title">Please Select File!</string>
+    <string name="uart_settings">Uart Settings</string>
+    <string name="pref_name_title">device name</string>
+    <string name="pref_name_summary">uart open name</string>
+    <string name="pref_baud_title">BaudRate</string>
+    <string name="pref_baud_summary">MCU supported baud rate</string>
+    <string name="pref_update_title">Firmware Update Version:%s</string>
+    <string name="pref_update_summary">Firmware Update support E7759(device name:ttyHSL2),E9631(device name:ttyS5)</string>
+    <string name="main_exit_dialog_title">We will reboot device?</string>
+    <string name="main_exit_dialog_message">After update firmware,we will reboot devices ?</string>
+</resources>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:key="debug_settings"
+        android:title="@string/uart_settings">
+        <ListPreference
+            android:defaultValue="ttyS5"
+            android:key="devices_name_devices"
+            android:summary="@string/pref_name_summary"
+            android:title="@string/pref_name_title"/>
+        <ListPreference
+            android:defaultValue="115200"
+            android:entries="@array/BaudRate"
+            android:entryValues="@array/BaudRate"
+            android:key="devices_baudrate"
+            android:summary="@string/pref_baud_summary"
+            android:title="@string/pref_baud_title"/>
+        <Preference
+            android:key="tips"
+            android:summary="@string/pref_update_summary"
+            android:title="@string/pref_update_title"/>
+    </PreferenceCategory>
+</PreferenceScreen>

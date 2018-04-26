@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Mcu固件升级</string>
+    <string name="hint_et_file_path">请选择一个.bin文件</string>
+    <string name="select">选择</string>
+    <string name="start">开始</string>
+    <string name="setting">设置</string>
+    <string name="valid_file">选择一个合法的bin文件</string>
+    <string name="toast_connect">请先连接外设</string>
+    <string name="select_file_title">请选择文件</string>
+    <string name="uart_settings">串口设置</string>
+    <string name="pref_name_title">设备名称</string>
+    <string name="pref_name_summary">串口打开的名称</string>
+    <string name="pref_baud_title">波特率</string>
+    <string name="pref_baud_summary">MCU支持的波特率</string>
+    <string name="pref_update_title">固件升级 版本：%s</string>
+    <string name="pref_update_summary">固件升级支持E7759(设备名:ttyHSL2)、E9631(设备名:ttyS5)</string>
+    <string name="main_exit_dialog_title">我们将重启设备？</string>
+    <string name="main_exit_dialog_message">升级固件后重启以便于正常通信\n点击确认重启设备~</string>
+</resources>
