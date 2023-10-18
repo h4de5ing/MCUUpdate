@@ -4,8 +4,10 @@ import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
-import android.support.annotation.Nullable;
 
+import androidx.annotation.Nullable;
+
+import com.github.angads25.filepicker.BuildConfig;
 import com.van.uart.UartManager;
 
 import java.util.Collections;
@@ -31,7 +33,7 @@ public class SettingsPreferenceFragment extends PreferenceFragment implements Pr
         mLpName = (ListPreference) findPreference("devices_name_devices");
         mLpBaudRate = (ListPreference) findPreference("devices_baudrate");
         mTips = findPreference("tips");
-        mTips.setTitle(getString(R.string.pref_update_title,BuildConfig.VERSION_NAME) );
+        mTips.setTitle(getString(R.string.pref_update_title, BuildConfig.VERSION_NAME) );
         mLpName.setEntries(devices);
         mLpName.setEntryValues(devices);
         mLpName.setSummary(getString(R.string.pref_name_summary) + " : " + mLpName.getValue());
