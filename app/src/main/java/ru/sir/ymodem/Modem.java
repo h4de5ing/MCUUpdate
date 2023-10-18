@@ -58,11 +58,8 @@ class Modem {
         while (true) {
             try {
                 character = readByte(timer);
-                if (character == NAK)
-                    return false;
-                if (character == ST_C) {
-                    return true;
-                }
+                if (character == NAK) return false;
+                if (character == ST_C) return true;
             } catch (TimeoutException e) {
                 PostEventBus.post("TimeOut,Please try again!!");
                 throw new IOException("Timeout waiting for receiver");
@@ -83,7 +80,6 @@ class Modem {
 
     protected void sendEOT() throws IOException {
         PostEventBus.post("application start! ...");
-        PostEventBus.post("http://www.unistrong.com.cn");
         int errorCount = 0;
         Timer timer = new Timer(BLOCK_TIMEOUT);
         int character;
@@ -117,8 +113,7 @@ class Modem {
         while (errorCount < MAXERRORS) {
             timer.start();
 
-            if (block.length == 1024)
-                write(new byte[]{STX});
+            if (block.length == 1024) write(new byte[]{STX});
             else //128
                 write(new byte[]{SOH});
 

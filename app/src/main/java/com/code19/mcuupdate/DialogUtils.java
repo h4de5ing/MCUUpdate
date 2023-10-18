@@ -3,7 +3,6 @@ package com.code19.mcuupdate;
 import android.content.Context;
 import android.os.Environment;
 
-import com.github.angads25.filepicker.controller.DialogSelectionListener;
 import com.github.angads25.filepicker.model.DialogConfigs;
 import com.github.angads25.filepicker.model.DialogProperties;
 import com.github.angads25.filepicker.view.FilePickerDialog;
@@ -21,7 +20,7 @@ public class DialogUtils {
     }
 
     public static void select_file(Context context, final DialogSelection dialogSelection) {
-        String default_dir= Environment.getExternalStorageDirectory().getAbsolutePath();
+        String default_dir = Environment.getExternalStorageDirectory().getAbsolutePath();
         DialogProperties properties = new DialogProperties();
         properties.selection_mode = DialogConfigs.SINGLE_MODE;
         properties.selection_type = DialogConfigs.FILE_SELECT;
@@ -32,11 +31,6 @@ public class DialogUtils {
         FilePickerDialog dialog = new FilePickerDialog(context, properties);
         dialog.setTitle(context.getString(R.string.select_file_title));
         dialog.show();
-        dialog.setDialogSelectionListener(new DialogSelectionListener() {
-            @Override
-            public void onSelectedFilePaths(String[] files) {
-                dialogSelection.onSelectedFilePaths(files);
-            }
-        });
+        dialog.setDialogSelectionListener(dialogSelection::onSelectedFilePaths);
     }
 }

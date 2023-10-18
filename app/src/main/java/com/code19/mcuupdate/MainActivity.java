@@ -39,14 +39,14 @@ import ru.sir.ymodem.YModem;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView mTvresult, mTvProgress;
+    private TextView mTvResult, mTvProgress;
     private UartManager mUartManager;
     private EditText mEt_file;
     private File mFirmwareFile;
     private String mName = "ttyS5";
     private String mBaud = "115200";
     private ProgressBar mPBProgressBar;
-    private Button mBtnstatdownload;
+    private Button mBtnStatDownload;
     private SharedPreferences mSp;
 
     private Handler mHandler = new Handler();
@@ -54,20 +54,17 @@ public class MainActivity extends AppCompatActivity {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onMessageEvent(MessageEvent event) {
         String message = event.getMessage();
-        if (mTvresult != null && mPBProgressBar != null) {
+        if (mTvResult != null && mPBProgressBar != null) {
             if (message.startsWith("pro_")) {
                 int oneItem = (int) (Math.ceil((double) 100 / Constants.sCountPro));
                 int Count = Constants.sCurrentPro * oneItem;
                 if (Count >= 100) {
                     Count = 100;
-                    mHandler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                Runtime.getRuntime().exec("reboot");
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                    mHandler.postDelayed(() -> {
+                        try {
+                            Runtime.getRuntime().exec("reboot");
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
                     }, 2000);
                 }
@@ -75,9 +72,9 @@ public class MainActivity extends AppCompatActivity {
                 mTvProgress.setText(Count + "%");
             } else {
                 if (message.equals("...")) {
-                    mTvresult.append(message);
+                    mTvResult.append(message);
                 } else {
-                    mTvresult.append(message + "\n");
+                    mTvResult.append(message + "\n");
                 }
             }
         }
@@ -93,7 +90,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         }
-        closeE9631ttyS5();
         initView();
         EventBus.getDefault().register(this);
         mSp = PreferenceManager.getDefaultSharedPreferences(this);
@@ -112,53 +108,38 @@ public class MainActivity extends AppCompatActivity {
 
     private void initView() {
         mEt_file = findViewById(R.id.et_file_show);
-        findViewById(R.id.btn_file_select).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                DialogUtils.select_file(MainActivity.this, new DialogUtils.DialogSelection() {
-                    @Override
-                    public void onSelectedFilePaths(String[] files) {
-                        if (files.length == 1) {
-                            mEt_file.setText(files[0]);
-                            mFirmwareFile = new File(files[0]);
-                        }
-                    }
-                });
+        findViewById(R.id.btn_file_select).setOnClickListener(v -> DialogUtils.select_file(MainActivity.this, files -> {
+            if (files.length == 1) {
+                mEt_file.setText(files[0]);
+                mFirmwareFile = new File(files[0]);
             }
-        });
+        }));
 
-        mTvresult = findViewById(R.id.tv_result);
-        mTvresult.setMovementMethod(ScrollingMovementMethod.getInstance());
+        mTvResult = findViewById(R.id.tv_result);
+        mTvResult.setMovementMethod(ScrollingMovementMethod.getInstance());
         mTvProgress = findViewById(R.id.tv_progress);
         mPBProgressBar = findViewById(R.id.pb_progress);
-        mBtnstatdownload = findViewById(R.id.btn_stat_download);
-        mBtnstatdownload.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                writeData();
-                mTvresult.setText("");
-                mPBProgressBar.setVisibility(View.VISIBLE);
-                Constants.sCurrentPro = 0;
-                Constants.sCountPro = 0;
-                if (mFirmwareFile != null && mFirmwareFile.exists()) {
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (mUartManager != null) {
-                                try {
-                                    if (mUartManager.isOpen()) {
-                                        new YModem(mUartManager).send(mFirmwareFile);
-                                    }
-                                } catch (IOException e) {
-                                    Log.e("gh0st", e.toString());
-                                }
+        mBtnStatDownload = findViewById(R.id.btn_stat_download);
+        mBtnStatDownload.setOnClickListener(v -> {
+            writeData();
+            mTvResult.setText("");
+            Constants.sCurrentPro = 0;
+            Constants.sCountPro = 0;
+            if (mFirmwareFile != null && mFirmwareFile.exists()) {
+                new Thread(() -> {
+                    if (mUartManager != null) {
+                        try {
+                            if (mUartManager.isOpen()) {
+                                runOnUiThread(() -> mPBProgressBar.setVisibility(View.VISIBLE));
+                                new YModem(mUartManager).send(mFirmwareFile);
                             }
+                        } catch (IOException e) {
+                            Log.e("gh0st", e.toString());
                         }
-                    }).start();
-                } else {
-                    showToast(getString(R.string.valid_file));
-                }
-
+                    }
+                }).start();
+            } else {
+                showToast(getString(R.string.valid_file));
             }
         });
     }
@@ -180,35 +161,22 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * 开始升级前关闭系统服务的串口 通信 ,防止串口占用
-     * 如果系统里面没有这个广播接收器请忽略
-     */
-    private static final String IntentAction = "unistrong.intent.action.SHUTDOWN";
-
-    private void closeE9631ttyS5() {
-        Intent intent = new Intent();
-        intent.setAction(IntentAction);
-        intent.putExtra("shutdown_value", "close_uart");
-        sendBroadcast(intent);
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
         if (mUartManager == null) {
             if (mName.isEmpty()) {
                 showToast("Devices name is Empty");
-                mBtnstatdownload.setEnabled(false);
+                mBtnStatDownload.setEnabled(false);
             } else {
                 if (mBaud.isEmpty()) {
                     showToast("Baud rate is Empty");
-                    mBtnstatdownload.setEnabled(false);
+                    mBtnStatDownload.setEnabled(false);
                 } else {
-                    mBtnstatdownload.setEnabled(true);
+                    mBtnStatDownload.setEnabled(true);
                     try {
                         mUartManager = new UartManager();
-                        mUartManager.open(mName, getBaudRate(Integer.valueOf(mBaud)));
+                        mUartManager.open(mName, getBaudRate(Integer.parseInt(mBaud)));
                     } catch (LastError lastError) {
                         Toast.makeText(this, lastError.toString(), Toast.LENGTH_SHORT).show();
                         lastError.printStackTrace();
@@ -221,9 +189,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mUartManager != null) {
-            mUartManager.close();
-        }
+        if (mUartManager != null) mUartManager.close();
         EventBus.getDefault().unregister(this);
     }
 
@@ -236,32 +202,19 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        if (itemId == R.id.action_setting) {
+        if (item.getItemId() == R.id.action_setting) {
             startActivity(new Intent(MainActivity.this, SettingsActivity.class));
         }
         return super.onOptionsItemSelected(item);
     }
 
     public static UartManager.BaudRate getBaudRate(int baudrate) {
-        UartManager.BaudRate value = null;
-        switch (baudrate) {
-            case 9600:
-                value = UartManager.BaudRate.B9600;
-                break;
-            case 19200:
-                value = UartManager.BaudRate.B19200;
-                break;
-            case 57600:
-                value = UartManager.BaudRate.B57600;
-                break;
-            case 115200:
-                value = UartManager.BaudRate.B115200;
-                break;
-            case 230400:
-                value = UartManager.BaudRate.B230400;
-                break;
-        }
-        return value;
+        return switch (baudrate) {
+            case 9600 -> UartManager.BaudRate.B9600;
+            case 19200 -> UartManager.BaudRate.B19200;
+            case 57600 -> UartManager.BaudRate.B57600;
+            case 230400 -> UartManager.BaudRate.B230400;
+            default -> UartManager.BaudRate.B115200;
+        };
     }
 }
