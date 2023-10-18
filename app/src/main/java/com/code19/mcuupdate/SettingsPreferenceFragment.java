@@ -1,13 +1,12 @@
 package com.code19.mcuupdate;
 
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 
-import androidx.annotation.Nullable;
-
-import com.github.angads25.filepicker.BuildConfig;
 import com.van.uart.UartManager;
 
 import java.util.Collections;
@@ -23,17 +22,21 @@ import java.util.Set;
 public class SettingsPreferenceFragment extends PreferenceFragment implements Preference.OnPreferenceChangeListener {
 
     private ListPreference mLpName, mLpBaudRate;
-    private Preference mTips;
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.settings);
         String[] devices = removal(UartManager.devices());//过滤重复
         mLpName = (ListPreference) findPreference("devices_name_devices");
         mLpBaudRate = (ListPreference) findPreference("devices_baudrate");
-        mTips = findPreference("tips");
-        mTips.setTitle(getString(R.string.pref_update_title, BuildConfig.VERSION_NAME) );
+        Preference mTips = findPreference("tips");
+        try {
+            PackageInfo packageInfo = getActivity().getPackageManager().getPackageInfo(getActivity().getPackageName(), 0);
+            mTips.setTitle(getString(R.string.pref_update_title, packageInfo.versionName));
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
         mLpName.setEntries(devices);
         mLpName.setEntryValues(devices);
         mLpName.setSummary(getString(R.string.pref_name_summary) + " : " + mLpName.getValue());

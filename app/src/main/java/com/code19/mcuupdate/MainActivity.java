@@ -3,7 +3,6 @@ package com.code19.mcuupdate;
 import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -84,23 +83,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        try {
-            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-            setTitle(getString(R.string.app_name) + " V " + packageInfo.versionName);
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
-        }
         initView();
         EventBus.getDefault().register(this);
         mSp = PreferenceManager.getDefaultSharedPreferences(this);
         String name = mSp.getString("devices_name_devices", "");
         String baud = mSp.getString("devices_baudrate", "");
-        if (!TextUtils.isEmpty(name)) {
-            mName = name;
-        }
-        if (!TextUtils.isEmpty(baud)) {
-            mBaud = baud;
-        }
+        if (!TextUtils.isEmpty(name)) mName = name;
+        if (!TextUtils.isEmpty(baud)) mBaud = baud;
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
         }
