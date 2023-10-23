@@ -6,6 +6,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
@@ -14,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -41,14 +44,15 @@ public class MainActivity extends AppCompatActivity {
     private TextView mTvResult, mTvProgress;
     private UartManager mUartManager;
     private EditText mEt_file;
-    private File mFirmwareFile;
-    private String mName = "ttyS5";
+    private File mFirmwareFile = new File("/sdcard/Download/21.bin");
+    private String mName = "ttyS3";
     private String mBaud = "115200";
     private ProgressBar mPBProgressBar;
     private Button mBtnStatDownload;
-    private SharedPreferences mSp;
-
-    private Handler mHandler = new Handler();
+    //    private final byte[] data = {0x20, 0x20, 0x20, 0x78, 0x78, 0x78};
+    private final byte[] data = {' ', ' ', ' ', 'x', 'x', 'x', '1'};
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
+    private boolean isDownloading = false;
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onMessageEvent(MessageEvent event) {
@@ -59,12 +63,13 @@ public class MainActivity extends AppCompatActivity {
                 int Count = Constants.sCurrentPro * oneItem;
                 if (Count >= 100) {
                     Count = 100;
+                    isDownloading = false;
                     mHandler.postDelayed(() -> {
-                        try {
-                            Runtime.getRuntime().exec("reboot");
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+//                        try {
+//                            Runtime.getRuntime().exec("reboot");
+//                        } catch (IOException e) {
+//                            e.printStackTrace();
+//                        }
                     }, 2000);
                 }
                 mPBProgressBar.setProgress(Count);
@@ -85,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         initView();
         EventBus.getDefault().register(this);
-        mSp = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences mSp = PreferenceManager.getDefaultSharedPreferences(this);
         String name = mSp.getString("devices_name_devices", "");
         String baud = mSp.getString("devices_baudrate", "");
         if (!TextUtils.isEmpty(name)) mName = name;
@@ -93,6 +98,24 @@ public class MainActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
         }
+//        new Thread(() -> {
+//            while (true) {
+//                if (mUartManager != null && mUartManager.isOpen()) {
+//                    if (!isDownloading) {
+//                        byte[] buf = new byte[1024];
+//                        try {
+//                            int size = mUartManager.read(buf, buf.length, 50, 1);
+//                            if (size > 0) {
+//                                Log.i("gh0st", "收到单片机信息：" + new String(buf, 0, size) + " " + DataUtils.bytes2HexString(buf));
+//                                updateTv(new String(buf, 0, size));
+//                            }
+//                        } catch (LastError e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                }
+//            }
+//        }).start();
     }
 
     private void initView() {
@@ -109,8 +132,39 @@ public class MainActivity extends AppCompatActivity {
         mTvProgress = findViewById(R.id.tv_progress);
         mPBProgressBar = findViewById(R.id.pb_progress);
         mBtnStatDownload = findViewById(R.id.btn_stat_download);
+        CheckBox cb = findViewById(R.id.cb_21bin);
+        cb.setOnCheckedChangeListener((compoundButton, b) -> mFirmwareFile = new File(b ? "/sdcard/Download/21.bin" : "/sdcard/Download/20.bin"));
+        findViewById(R.id.btn_send0).setOnClickListener(view -> {
+            try {
+                new Thread(() -> {
+                    if (mUartManager.isOpen()) {
+                        isDownloading = false;
+                        try {
+                            for (byte datum : data) {
+                                byte[] sendData = {datum};
+                                mUartManager.write(sendData, sendData.length);
+                                SystemClock.sleep(170);
+                            }
+                            SystemClock.sleep(100);
+                            isDownloading = true;
+                            runOnUiThread(() -> mPBProgressBar.setVisibility(View.VISIBLE));
+                            updateTv(mFirmwareFile.getAbsolutePath() + "\n");
+                            new YModem(mUartManager).send(mFirmwareFile, message -> updateTv(message + "\n"));
+                        } catch (LastError | IOException e) {
+                            updateTv("发生异常; " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    } else {
+                        updateTv("串口没有打开");
+                    }
+                }).start();
+                byte[] data = {'1'};
+                mUartManager.write(data, data.length);
+            } catch (LastError lastError) {
+                lastError.printStackTrace();
+            }
+        });
         mBtnStatDownload.setOnClickListener(v -> {
-            writeData();
             mTvResult.setText("");
             Constants.sCurrentPro = 0;
             Constants.sCountPro = 0;
@@ -119,10 +173,13 @@ public class MainActivity extends AppCompatActivity {
                     if (mUartManager != null) {
                         try {
                             if (mUartManager.isOpen()) {
+                                byte[] data = {'1'};
+                                mUartManager.write(data, data.length);
+                                isDownloading = true;
                                 runOnUiThread(() -> mPBProgressBar.setVisibility(View.VISIBLE));
-                                new YModem(mUartManager).send(mFirmwareFile);
+                                new YModem(mUartManager).send(mFirmwareFile, message -> updateTv(message + "\n"));
                             }
-                        } catch (IOException e) {
+                        } catch (Exception e) {
                             Log.e("gh0st", e.toString());
                         }
                     }
@@ -137,17 +194,15 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(MainActivity.this, str, Toast.LENGTH_SHORT).show();
     }
 
-    /**
-     * 发送开始升级指令,与单片机约定
-     * 校验位需要重新计算55 02 30 00 01 04 35 C6 55 03
-     */
-    private void writeData() {
-        try {
-            byte[] data = {0x55, 0x02, 0x30, 0x00, 0x01, 0x04, 0x35, (byte) 0xC6, 0x55, 0x03};
-            mUartManager.write(data, data.length);
-        } catch (LastError lastError) {
-            lastError.printStackTrace();
-        }
+    public void updateTv(String message) {
+        runOnUiThread(() -> {
+            mTvResult.append(message);
+            int offset = mTvResult.getLineCount() * mTvResult.getLineHeight() - mTvResult.getHeight();
+            if (offset >= 6000) {
+                mTvResult.setText("");
+            }
+            mTvResult.scrollTo(0, Math.max(0, offset));
+        });
     }
 
     @Override
@@ -197,8 +252,8 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public static UartManager.BaudRate getBaudRate(int baudrate) {
-        return switch (baudrate) {
+    public static UartManager.BaudRate getBaudRate(int baudRate) {
+        return switch (baudRate) {
             case 9600 -> UartManager.BaudRate.B9600;
             case 19200 -> UartManager.BaudRate.B19200;
             case 57600 -> UartManager.BaudRate.B57600;

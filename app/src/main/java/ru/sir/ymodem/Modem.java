@@ -4,6 +4,8 @@ package ru.sir.ymodem;
 import android.util.Log;
 
 import com.code19.mcuupdate.Constants;
+import com.code19.mcuupdate.DataUtils;
+import com.code19.mcuupdate.OnChangeListener;
 import com.code19.mcuupdate.eventbus.PostEventBus;
 import com.van.uart.LastError;
 import com.van.uart.UartManager;
@@ -48,12 +50,10 @@ class Modem {
     /**
      * Wait for receiver request for transmission
      *
-     * @param timer
      * @return TRUE if receiver requested CRC-16 checksum, FALSE if 8bit checksum
-     * @throws IOException
      */
-    protected boolean waitReceiverRequest(Timer timer) throws IOException {
-        PostEventBus.post("Connecting ...");
+    protected boolean waitReceiverRequest(Timer timer, OnChangeListener listener) throws IOException {
+        listener.post("Connecting ...");
         int character;
         while (true) {
             try {
@@ -61,25 +61,25 @@ class Modem {
                 if (character == NAK) return false;
                 if (character == ST_C) return true;
             } catch (TimeoutException e) {
-                PostEventBus.post("TimeOut,Please try again!!");
+                listener.post("TimeOut,Please try again!!");
                 throw new IOException("Timeout waiting for receiver");
             }
         }
     }
 
-    protected void sendDataBlocks(DataInputStream dataStream, int blockNumber, CRC crc, byte[] block) throws IOException {
-        PostEventBus.post("write file start ...");
+    protected void sendDataBlocks(DataInputStream dataStream, int blockNumber, CRC crc, byte[] block, OnChangeListener listener) throws IOException {
+        listener.post("write file start ...");
         int dataLength;
         while ((dataLength = dataStream.read(block)) != -1) {
             //PostEventBus.post("send data ..." + dataLength);
             PostEventBus.post("...");
-            sendBlock(blockNumber++, block, dataLength, crc);
+            sendBlock(blockNumber++, block, dataLength, crc, listener);
         }
-        PostEventBus.post("\nwrite file finish ...");
+        listener.post("\nwrite file finish ...");
     }
 
-    protected void sendEOT() throws IOException {
-        PostEventBus.post("application start! ...");
+    protected void sendEOT(OnChangeListener listener) throws IOException {
+        listener.post("application start! ...");
         int errorCount = 0;
         Timer timer = new Timer(BLOCK_TIMEOUT);
         int character;
@@ -88,10 +88,10 @@ class Modem {
             try {
                 character = readByte(timer.start());
                 if (character == ACK) {
-                    PostEventBus.post("pro_" + (Constants.sCurrentPro++));
+                    listener.post("pro_" + (Constants.sCurrentPro++));
                     return;
                 } else if (character == CAN) {
-                    PostEventBus.post("Transmission terminated");
+                    listener.post("Transmission terminated");
                     throw new IOException("Transmission terminated");
                 }
             } catch (TimeoutException ignored) {
@@ -100,7 +100,7 @@ class Modem {
         }
     }
 
-    protected void sendBlock(int blockNumber, byte[] block, int dataLength, CRC crc) throws IOException {
+    protected void sendBlock(int blockNumber, byte[] block, int dataLength, CRC crc, OnChangeListener listener) throws IOException {
         int errorCount;
         int character;
         Timer timer = new Timer(SEND_BLOCK_TIMEOUT);
@@ -125,13 +125,13 @@ class Modem {
                 try {
                     character = readByte(timer);
                     if (character == ACK) {
-                        PostEventBus.post("pro_" + (Constants.sCurrentPro++));
+                        listener.post("pro_" + (Constants.sCurrentPro++));
                         return;
                     } else if (character == NAK) {
                         errorCount++;
                         break;
                     } else if (character == CAN) {
-                        PostEventBus.post("Transmission terminated");
+                        listener.post("Transmission terminated");
                         throw new IOException("Transmission terminated");
                     }
                 } catch (TimeoutException e) {
@@ -141,7 +141,7 @@ class Modem {
             }
 
         }
-        PostEventBus.post("Too many errors caught, abandoning transfer");
+        listener.post("Too many errors caught, abandoning transfer");
         throw new IOException("Too many errors caught, abandoning transfer");
     }
 
@@ -188,6 +188,7 @@ class Modem {
             try {
                 int read = mUartManager.read(buf, 1, 100, 20);
                 if (read > 0) {
+                    Log.i("gh0st", "YMode：" + DataUtils.bytes2HexString(buf));
                     return buf[0];
                 }
             } catch (LastError lastError) {

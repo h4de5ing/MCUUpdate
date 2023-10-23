@@ -12,9 +12,22 @@ android {
         //noinspection ChromeOsAbiSupport
         ndk { abiFilters 'armeabi', 'armeabi-v7a' }
     }
+    signingConfigs {
+        sign {
+            storeFile file("D:\\Android12SignerGUI\\SignFiles\\NewPublic\\platform.jks")
+            storePassword('android')
+            keyAlias('android')
+            keyPassword('android')
+        }
+    }
     buildTypes {
+        debug {
+            minifyEnabled false
+            signingConfig signingConfigs.sign
+        }
         release {
             minifyEnabled false
+            signingConfig signingConfigs.sign
         }
     }
     compileOptions {

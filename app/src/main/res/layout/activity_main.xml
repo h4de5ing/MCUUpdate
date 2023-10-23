@@ -6,19 +6,11 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="E7759A Firmware update V1.0"
-        android:textSize="25dp"
-        android:visibility="gone" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="50dp"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:visibility="gone">
 
         <EditText
             android:id="@+id/et_file_show"
@@ -36,15 +28,22 @@
             android:text="@string/select" />
     </LinearLayout>
 
+    <CheckBox
+        android:id="@+id/cb_21bin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="21.bin" />
+
     <TextView
         android:id="@+id/tv_progress"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="0%"
         android:textColor="@color/colorAccent"
-        android:textSize="50dp"
-        android:visibility="visible" />
+        android:textSize="50sp"
+        android:visibility="visible"
+        tools:text="0%" />
 
     <ProgressBar
         android:id="@+id/pb_progress"
@@ -54,23 +53,33 @@
         android:visibility="gone"
         tools:progress="10" />
 
-    <Button
-        android:id="@+id/btn_stat_download"
-        android:layout_width="200dp"
-        android:layout_height="100dp"
-        android:layout_gravity="center"
-        android:layout_marginTop="30dp"
-        android:text="@string/start"
-        android:textSize="30dp" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
+        <Button
+            android:id="@+id/btn_send0"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="send 0"
+            android:textSize="30sp" />
+
+        <Button
+            android:id="@+id/btn_stat_download"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="@string/start"
+            android:textSize="30sp" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tv_result"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/btn_stat_download"
         android:scrollbars="vertical"
-        android:textSize="20dp"
+        android:textSize="20sp"
         tools:text="Hello World!" />
 
 </LinearLayout>

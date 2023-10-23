@@ -4,7 +4,7 @@
         android:key="debug_settings"
         android:title="@string/uart_settings">
         <ListPreference
-            android:defaultValue="ttyS5"
+            android:defaultValue="ttyS3"
             android:key="devices_name_devices"
             android:summary="@string/pref_name_summary"
             android:title="@string/pref_name_title"/>

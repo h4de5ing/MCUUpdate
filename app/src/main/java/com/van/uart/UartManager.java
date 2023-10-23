@@ -1,5 +1,9 @@
 package com.van.uart;
 
+import android.util.Log;
+
+import com.code19.mcuupdate.DataUtils;
+
 public class UartManager {
 
     static {
@@ -30,6 +34,7 @@ public class UartManager {
 
     public void open(String name, BaudRate baudRate) throws LastError {
         id = open(name, baudRate.ordinal());
+        Log.i("gh0t", "打开串口:" + name + " " + baudRate);
         this.name = name;
         this.baudRate = baudRate;
     }
@@ -44,6 +49,7 @@ public class UartManager {
     }
 
     public int write(final byte[] data, int size) throws LastError {
+        Log.i("gh0st", "串口发送数据 ：" + DataUtils.bytes2HexString(data));
         if (-1 != id) return write(id, data, size);
         return -1;
     }
