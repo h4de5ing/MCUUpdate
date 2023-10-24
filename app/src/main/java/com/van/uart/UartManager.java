@@ -15,28 +15,14 @@ public class UartManager {
     }
 
     private int id;
-    private String name;
-    private BaudRate baudRate;
 
     public UartManager() {
         id = -1;
-        name = "";
-        baudRate = BaudRate.B115200;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public BaudRate getBaudRate() {
-        return baudRate;
     }
 
     public void open(String name, BaudRate baudRate) throws LastError {
         id = open(name, baudRate.ordinal());
         Log.i("gh0t", "打开串口:" + name + " " + baudRate);
-        this.name = name;
-        this.baudRate = baudRate;
     }
 
     public void close() {
@@ -49,8 +35,11 @@ public class UartManager {
     }
 
     public int write(final byte[] data, int size) throws LastError {
-        Log.i("gh0st", "串口发送数据 ：" + DataUtils.bytes2HexString(data));
-        if (-1 != id) return write(id, data, size);
+        if (-1 != id) {
+            int result = write(id, data, size);
+            Log.i("gh0st", "串口发送数据 ：" + DataUtils.bytes2HexString(data) + " 结果:" + result);
+            return result;
+        }
         return -1;
     }
 

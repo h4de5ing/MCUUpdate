@@ -8,18 +8,17 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:visibility="gone">
+        android:layout_height="wrap_content">
 
         <EditText
             android:id="@+id/et_file_show"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:editable="false"
+            android:enabled="false"
             android:hint="@string/hint_et_file_path"
-            tools:text="/sdcard/E7759A.bin" />
+            android:inputType="text"
+            tools:text="/sdcard/Test.bin" />
 
         <Button
             android:id="@+id/btn_file_select"
@@ -28,32 +27,26 @@
             android:text="@string/select" />
     </LinearLayout>
 
-    <CheckBox
-        android:id="@+id/cb_21bin"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:checked="true"
-        android:text="21.bin" />
-
-    <TextView
-        android:id="@+id/tv_progress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textColor="@color/colorAccent"
-        android:textSize="50sp"
-        tools:text="0%" />
-
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tv_progress"
+            android:layout_width="130dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="0%"
+            android:textColor="@color/colorAccent"
+            android:textSize="50sp" />
 
         <Button
             android:id="@+id/btn_send0"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="send 0"
+            android:text="@string/start"
             android:textSize="30sp" />
 
         <Button
@@ -61,14 +54,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="@string/start"
-            android:textSize="30sp" />
+            android:text="断电模式"
+            android:textSize="30sp"
+            android:visibility="gone" />
     </LinearLayout>
 
     <TextView
         android:id="@+id/tv_result"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:scrollbars="vertical"
         android:textSize="20sp"
         tools:text="Hello World!" />

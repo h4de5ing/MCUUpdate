@@ -13,7 +13,6 @@
     <string name="pref_baud_title">BaudRate</string>
     <string name="pref_baud_summary">MCU supported baud rate</string>
     <string name="pref_update_title">Firmware Update Version:%s</string>
-    <string name="pref_update_summary">Firmware Update support E7759(device name:ttyHSL2),E9631(device name:ttyS5)</string>
     <string name="main_exit_dialog_title">We will reboot device?</string>
     <string name="main_exit_dialog_message">After update firmware,we will reboot devices ?</string>
 </resources>

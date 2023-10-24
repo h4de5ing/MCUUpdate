@@ -34,8 +34,6 @@ public class YModem {
 
             //send block 0
             String fileNameString = file.getName() + (char) 0 + /*getFileSizes(file)*/ file.length() + ' ';
-            int packCount = (int) (Math.ceil((double) file.length() / 1024));
-            listener.post("fileNameString:" + fileNameString + "packCount:" + (packCount + 1));
             byte[] fileNameBytes = Arrays.copyOf(fileNameString.getBytes(), 128);
             modem.sendBlock(0, Arrays.copyOf(fileNameBytes, 128), 128, crc, listener);
 

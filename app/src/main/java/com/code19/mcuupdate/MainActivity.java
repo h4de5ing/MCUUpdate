@@ -13,11 +13,11 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView mTvResult, mTvProgress;
     private UartManager mUartManager;
     private EditText mEt_file;
-    private File mFirmwareFile = new File("/sdcard/Download/21.bin");
+    private File mFirmwareFile;
     private String mName = "ttyS3";
     private String mBaud = "115200";
     private Button mBtnStatDownload;
@@ -88,10 +88,9 @@ public class MainActivity extends AppCompatActivity {
         mTvResult.setMovementMethod(ScrollingMovementMethod.getInstance());
         mTvProgress = findViewById(R.id.tv_progress);
         mBtnStatDownload = findViewById(R.id.btn_stat_download);
-        CheckBox cb = findViewById(R.id.cb_21bin);
-        cb.setOnCheckedChangeListener((compoundButton, b) -> mFirmwareFile = new File(b ? "/sdcard/Download/21.bin" : "/sdcard/Download/20.bin"));
         findViewById(R.id.btn_send0).setOnClickListener(view -> {
-            try {
+            mTvResult.setText("");
+            if (mFirmwareFile != null && mFirmwareFile.exists()) {
                 new Thread(() -> {
                     if (mUartManager.isOpen()) {
                         try {
@@ -100,31 +99,16 @@ public class MainActivity extends AppCompatActivity {
                                 mUartManager.write(sendData, sendData.length);
                                 SystemClock.sleep(170);
                             }
-                            SystemClock.sleep(100);
-                            updateTv(mFirmwareFile.getAbsolutePath() + "\n");
-                            new YModem(mUartManager).send(mFirmwareFile, new OnChangeListener() {
-                                @Override
-                                public void post(String message) {
-                                    updateTv(message + "\n");
-                                }
-
-                                @Override
-                                public void progress(int progress) {
-                                    mTvProgress.setText(progress + "%");
-                                }
-                            });
+                            SystemClock.sleep(200);
+                            gotoYmodem();
                         } catch (LastError | IOException e) {
                             updateTv("发生异常; " + e.getMessage());
                             e.printStackTrace();
                         }
-                    } else {
-                        updateTv("串口没有打开");
                     }
                 }).start();
-                byte[] data = {'1'};
-                mUartManager.write(data, data.length);
-            } catch (LastError lastError) {
-                lastError.printStackTrace();
+            } else {
+                updateTv(getString(R.string.valid_file));
             }
         });
         mBtnStatDownload.setOnClickListener(v -> {
@@ -136,17 +120,7 @@ public class MainActivity extends AppCompatActivity {
                             if (mUartManager.isOpen()) {
                                 byte[] data = {'1'};
                                 mUartManager.write(data, data.length);
-                                new YModem(mUartManager).send(mFirmwareFile, new OnChangeListener() {
-                                    @Override
-                                    public void post(String message) {
-                                        updateTv(message + "\n");
-                                    }
-
-                                    @Override
-                                    public void progress(int progress) {
-                                        mTvProgress.setText(progress + "%");
-                                    }
-                                });
+                                gotoYmodem();
                             }
                         } catch (Exception e) {
                             Log.e("gh0st", e.toString());
@@ -154,22 +128,48 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }).start();
             } else {
-                showToast(getString(R.string.valid_file));
+                updateTv(getString(R.string.valid_file));
             }
         });
     }
 
-    public void showToast(String str) {
-        Toast.makeText(MainActivity.this, str, Toast.LENGTH_SHORT).show();
+    public void gotoYmodem() throws IOException {
+        new YModem(mUartManager).send(mFirmwareFile, new OnChangeListener() {
+            @Override
+            public void post(String message) {
+                updateTv(message + "\n");
+            }
+
+            @Override
+            public void progress(int progress) {
+                runOnUiThread(() -> {
+                    mTvProgress.setText(progress + "%");
+                    if (progress >= 100) alert();
+                });
+
+            }
+        });
+    }
+
+    public void alert() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("是否重启机器?");
+        builder.setNegativeButton(android.R.string.cancel, null);
+        builder.setPositiveButton(android.R.string.ok, (dialogInterface, i) -> {
+            try {
+                Runtime.getRuntime().exec("reboot");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        builder.create().show();
     }
 
     public void updateTv(String message) {
         runOnUiThread(() -> {
             mTvResult.append(message);
             int offset = mTvResult.getLineCount() * mTvResult.getLineHeight() - mTvResult.getHeight();
-            if (offset >= 6000) {
-                mTvResult.setText("");
-            }
+            if (offset >= 6000) mTvResult.setText("");
             mTvResult.scrollTo(0, Math.max(0, offset));
         });
     }
@@ -179,11 +179,11 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         if (mUartManager == null) {
             if (mName.isEmpty()) {
-                showToast("Devices name is Empty");
+                updateTv("Devices name is Empty");
                 mBtnStatDownload.setEnabled(false);
             } else {
                 if (mBaud.isEmpty()) {
-                    showToast("Baud rate is Empty");
+                    updateTv("Baud rate is Empty");
                     mBtnStatDownload.setEnabled(false);
                 } else {
                     mBtnStatDownload.setEnabled(true);

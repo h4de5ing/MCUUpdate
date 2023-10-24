@@ -9,10 +9,6 @@ import com.github.angads25.filepicker.view.FilePickerDialog;
 
 import java.io.File;
 
-/**
- * Created by Gh0st on 2017/6/30.
- * 文件选择对话框
- */
 
 public class DialogUtils {
     public interface DialogSelection {

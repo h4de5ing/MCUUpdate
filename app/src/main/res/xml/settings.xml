@@ -7,17 +7,16 @@
             android:defaultValue="ttyS3"
             android:key="devices_name_devices"
             android:summary="@string/pref_name_summary"
-            android:title="@string/pref_name_title"/>
+            android:title="@string/pref_name_title" />
         <ListPreference
             android:defaultValue="115200"
             android:entries="@array/BaudRate"
             android:entryValues="@array/BaudRate"
             android:key="devices_baudrate"
             android:summary="@string/pref_baud_summary"
-            android:title="@string/pref_baud_title"/>
+            android:title="@string/pref_baud_title" />
         <Preference
             android:key="tips"
-            android:summary="@string/pref_update_summary"
-            android:title="@string/pref_update_title"/>
+            android:title="@string/pref_update_title" />
     </PreferenceCategory>
 </PreferenceScreen>
