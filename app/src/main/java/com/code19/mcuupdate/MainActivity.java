@@ -5,8 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
@@ -14,11 +12,9 @@ import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,13 +22,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.code19.mcuupdate.eventbus.MessageEvent;
 import com.van.uart.LastError;
 import com.van.uart.UartManager;
-
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,49 +38,15 @@ public class MainActivity extends AppCompatActivity {
     private File mFirmwareFile = new File("/sdcard/Download/21.bin");
     private String mName = "ttyS3";
     private String mBaud = "115200";
-    private ProgressBar mPBProgressBar;
     private Button mBtnStatDownload;
-    //    private final byte[] data = {0x20, 0x20, 0x20, 0x78, 0x78, 0x78};
     private final byte[] data = {' ', ' ', ' ', 'x', 'x', 'x', '1'};
-    private final Handler mHandler = new Handler(Looper.getMainLooper());
-    private boolean isDownloading = false;
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onMessageEvent(MessageEvent event) {
-        String message = event.getMessage();
-        if (mTvResult != null && mPBProgressBar != null) {
-            if (message.startsWith("pro_")) {
-                int oneItem = (int) (Math.ceil((double) 100 / Constants.sCountPro));
-                int Count = Constants.sCurrentPro * oneItem;
-                if (Count >= 100) {
-                    Count = 100;
-                    isDownloading = false;
-                    mHandler.postDelayed(() -> {
-//                        try {
-//                            Runtime.getRuntime().exec("reboot");
-//                        } catch (IOException e) {
-//                            e.printStackTrace();
-//                        }
-                    }, 2000);
-                }
-                mPBProgressBar.setProgress(Count);
-                mTvProgress.setText(Count + "%");
-            } else {
-                if (message.equals("...")) {
-                    mTvResult.append(message);
-                } else {
-                    mTvResult.append(message + "\n");
-                }
-            }
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initView();
-        EventBus.getDefault().register(this);
         SharedPreferences mSp = PreferenceManager.getDefaultSharedPreferences(this);
         String name = mSp.getString("devices_name_devices", "");
         String baud = mSp.getString("devices_baudrate", "");
@@ -130,7 +87,6 @@ public class MainActivity extends AppCompatActivity {
         mTvResult = findViewById(R.id.tv_result);
         mTvResult.setMovementMethod(ScrollingMovementMethod.getInstance());
         mTvProgress = findViewById(R.id.tv_progress);
-        mPBProgressBar = findViewById(R.id.pb_progress);
         mBtnStatDownload = findViewById(R.id.btn_stat_download);
         CheckBox cb = findViewById(R.id.cb_21bin);
         cb.setOnCheckedChangeListener((compoundButton, b) -> mFirmwareFile = new File(b ? "/sdcard/Download/21.bin" : "/sdcard/Download/20.bin"));
@@ -138,7 +94,6 @@ public class MainActivity extends AppCompatActivity {
             try {
                 new Thread(() -> {
                     if (mUartManager.isOpen()) {
-                        isDownloading = false;
                         try {
                             for (byte datum : data) {
                                 byte[] sendData = {datum};
@@ -146,10 +101,18 @@ public class MainActivity extends AppCompatActivity {
                                 SystemClock.sleep(170);
                             }
                             SystemClock.sleep(100);
-                            isDownloading = true;
-                            runOnUiThread(() -> mPBProgressBar.setVisibility(View.VISIBLE));
                             updateTv(mFirmwareFile.getAbsolutePath() + "\n");
-                            new YModem(mUartManager).send(mFirmwareFile, message -> updateTv(message + "\n"));
+                            new YModem(mUartManager).send(mFirmwareFile, new OnChangeListener() {
+                                @Override
+                                public void post(String message) {
+                                    updateTv(message + "\n");
+                                }
+
+                                @Override
+                                public void progress(int progress) {
+                                    mTvProgress.setText(progress + "%");
+                                }
+                            });
                         } catch (LastError | IOException e) {
                             updateTv("发生异常; " + e.getMessage());
                             e.printStackTrace();
@@ -166,8 +129,6 @@ public class MainActivity extends AppCompatActivity {
         });
         mBtnStatDownload.setOnClickListener(v -> {
             mTvResult.setText("");
-            Constants.sCurrentPro = 0;
-            Constants.sCountPro = 0;
             if (mFirmwareFile != null && mFirmwareFile.exists()) {
                 new Thread(() -> {
                     if (mUartManager != null) {
@@ -175,9 +136,17 @@ public class MainActivity extends AppCompatActivity {
                             if (mUartManager.isOpen()) {
                                 byte[] data = {'1'};
                                 mUartManager.write(data, data.length);
-                                isDownloading = true;
-                                runOnUiThread(() -> mPBProgressBar.setVisibility(View.VISIBLE));
-                                new YModem(mUartManager).send(mFirmwareFile, message -> updateTv(message + "\n"));
+                                new YModem(mUartManager).send(mFirmwareFile, new OnChangeListener() {
+                                    @Override
+                                    public void post(String message) {
+                                        updateTv(message + "\n");
+                                    }
+
+                                    @Override
+                                    public void progress(int progress) {
+                                        mTvProgress.setText(progress + "%");
+                                    }
+                                });
                             }
                         } catch (Exception e) {
                             Log.e("gh0st", e.toString());
@@ -234,7 +203,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (mUartManager != null) mUartManager.close();
-        EventBus.getDefault().unregister(this);
     }
 
 

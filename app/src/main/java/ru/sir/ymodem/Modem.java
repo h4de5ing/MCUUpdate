@@ -3,10 +3,8 @@ package ru.sir.ymodem;
 
 import android.util.Log;
 
-import com.code19.mcuupdate.Constants;
 import com.code19.mcuupdate.DataUtils;
 import com.code19.mcuupdate.OnChangeListener;
-import com.code19.mcuupdate.eventbus.PostEventBus;
 import com.van.uart.LastError;
 import com.van.uart.UartManager;
 
@@ -23,7 +21,7 @@ import java.io.IOException;
  * You are free to use/modify the code for any purpose, but please leave a reference to me.<br/>
  */
 class Modem {
-    private UartManager mUartManager;
+    private final UartManager mUartManager;
     /* Protocol characters used */
     protected static final byte SOH = 0x01; /* Start Of Header */
     protected static final byte STX = 0x02; /* Start Of Text (used like SOH but means 1024 block size) */
@@ -68,11 +66,13 @@ class Modem {
     }
 
     protected void sendDataBlocks(DataInputStream dataStream, int blockNumber, CRC crc, byte[] block, OnChangeListener listener) throws IOException {
+        int allFileLength = dataStream.available();
         listener.post("write file start ...");
         int dataLength;
+        float sendLength = 0f;
         while ((dataLength = dataStream.read(block)) != -1) {
-            //PostEventBus.post("send data ..." + dataLength);
-            PostEventBus.post("...");
+            sendLength += dataLength;
+            listener.progress((int) (sendLength / allFileLength * 100.0));
             sendBlock(blockNumber++, block, dataLength, crc, listener);
         }
         listener.post("\nwrite file finish ...");
@@ -88,7 +88,6 @@ class Modem {
             try {
                 character = readByte(timer.start());
                 if (character == ACK) {
-                    listener.post("pro_" + (Constants.sCurrentPro++));
                     return;
                 } else if (character == CAN) {
                     listener.post("Transmission terminated");
@@ -104,12 +103,8 @@ class Modem {
         int errorCount;
         int character;
         Timer timer = new Timer(SEND_BLOCK_TIMEOUT);
-
-        if (dataLength < block.length) {
-            block[dataLength] = CPMEOF;
-        }
+        if (dataLength < block.length) block[dataLength] = CPMEOF;
         errorCount = 0;
-
         while (errorCount < MAXERRORS) {
             timer.start();
 
@@ -125,7 +120,6 @@ class Modem {
                 try {
                     character = readByte(timer);
                     if (character == ACK) {
-                        listener.post("pro_" + (Constants.sCurrentPro++));
                         return;
                     } else if (character == NAK) {
                         errorCount++;
@@ -145,7 +139,7 @@ class Modem {
         throw new IOException("Too many errors caught, abandoning transfer");
     }
 
-    private void writeCRC(byte[] block, CRC crc) throws IOException {
+    private void writeCRC(byte[] block, CRC crc) {
         byte[] crcBytes = new byte[crc.getCRCLength()];
         long crcValue = crc.calcCRC(block);
         for (int i = 0; i < crc.getCRCLength(); i++) {
@@ -155,7 +149,7 @@ class Modem {
     }
 
 
-    protected void sendByte(byte b) throws IOException {
+    protected void sendByte(byte b) {
         write(new byte[]{b});
     }
 
@@ -171,18 +165,13 @@ class Modem {
         }
     }
 
-    /**
-     * send CAN to interrupt seance
-     *
-     * @throws IOException
-     */
     protected void interruptTransmission() throws IOException {
         sendByte(CAN);
         sendByte(CAN);
     }
 
 
-    private byte readByte(Timer timer) throws IOException, TimeoutException {
+    private byte readByte(Timer timer) throws TimeoutException {
         while (true) {
             byte[] buf = new byte[1];
             try {
